@@ -16,7 +16,20 @@ export const metadata: Metadata = {
   },
   description:
     'Transform your goals into detailed, actionable roadmaps in seconds using the power of AI. Free to try, no signup required.',
-  keywords: ['AI', 'roadmap', 'action plan', 'productivity', 'goal setting', 'planning', 'groq', 'llama 3'],
+  keywords: [
+    'AI',
+    'roadmap',
+    'action plan',
+    'productivity',
+    'goal setting',
+    'planning',
+    'groq',
+    'llama 3',
+    'AI Roadmap Generator',
+    'YouTube to Action Plan',
+    'Strategic Planning AI',
+    'Kynto Productivity'
+  ],
   authors: [{ name: 'Kynto Team' }],
   creator: 'Kynto',
   openGraph: {

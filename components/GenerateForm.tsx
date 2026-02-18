@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Loader2, ArrowRight } from 'lucide-react';
+import { Sparkles, Loader2, ArrowRight, AlertCircle } from 'lucide-react';
 
 interface GenerateFormProps {
     onGenerate: (goal: string) => Promise<void>;
@@ -16,13 +16,26 @@ const EXAMPLE_GOALS = [
     'Get promoted to senior engineer',
 ];
 
+const MAX_CHARS = 8000;
+
 export default function GenerateForm({ onGenerate, isLoading }: GenerateFormProps) {
     const [goal, setGoal] = useState('');
+    const [showTooltip, setShowTooltip] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!goal.trim() || isLoading) return;
+        if (!goal.trim() || isLoading || goal.length > MAX_CHARS) return;
         await onGenerate(goal.trim());
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const value = e.target.value;
+        if (value.length <= MAX_CHARS) {
+            setGoal(value);
+            setShowTooltip(false);
+        } else {
+            setShowTooltip(true);
+        }
     };
 
     return (
@@ -43,13 +56,15 @@ export default function GenerateForm({ onGenerate, isLoading }: GenerateFormProp
                 <div className="relative">
                     <textarea
                         value={goal}
-                        onChange={(e) => setGoal(e.target.value)}
+                        onChange={handleChange}
                         placeholder="e.g. Launch a SaaS product in 90 days targeting small businesses..."
                         rows={4}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/25 focus:outline-none focus:border-blue-400/50 focus:bg-white/8 transition-all text-sm resize-none leading-relaxed"
+                        className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-white/25 focus:outline-none focus:bg-white/8 transition-all text-sm resize-none leading-relaxed ${goal.length >= MAX_CHARS ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-blue-400/50'
+                            }`}
                     />
-                    <div className="absolute bottom-3 right-3 text-white/20 text-xs">
-                        {goal.length}/500
+                    <div className={`absolute bottom-3 right-3 text-xs transition-colors ${goal.length >= MAX_CHARS ? 'text-red-400 font-medium' : 'text-white/20'
+                        }`}>
+                        {goal.length}/{MAX_CHARS}
                     </div>
                 </div>
 
@@ -67,26 +82,46 @@ export default function GenerateForm({ onGenerate, isLoading }: GenerateFormProp
                     ))}
                 </div>
 
-                <motion.button
-                    type="submit"
-                    disabled={isLoading || goal.trim().length < 5}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                    className="w-full btn-primary py-3.5 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
-                >
-                    {isLoading ? (
-                        <>
-                            <Loader2 size={16} className="animate-spin" />
-                            <span>Building your roadmap...</span>
-                        </>
-                    ) : (
-                        <>
-                            <Sparkles size={16} />
-                            <span>Generate Roadmap</span>
-                            <ArrowRight size={16} />
-                        </>
+                <div className="relative">
+                    <motion.button
+                        type="submit"
+                        disabled={isLoading || goal.trim().length < 5 || goal.length > MAX_CHARS}
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                        onMouseEnter={() => goal.length >= MAX_CHARS && setShowTooltip(true)}
+                        onMouseLeave={() => setShowTooltip(false)}
+                        className="w-full btn-primary py-3.5 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    >
+                        {isLoading ? (
+                            <>
+                                <Loader2 size={16} className="animate-spin" />
+                                <span>Building your roadmap...</span>
+                            </>
+                        ) : (
+                            <>
+                                <Sparkles size={16} />
+                                <span>Generate Roadmap</span>
+                                <ArrowRight size={16} />
+                            </>
+                        )}
+                    </motion.button>
+
+                    {/* Tooltip for character limit */}
+                    {showTooltip && goal.length >= MAX_CHARS && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="absolute -top-12 left-1/2 -translate-x-1/2 bg-red-500/90 text-white text-xs px-3 py-2 rounded-lg shadow-lg whitespace-nowrap z-10 backdrop-blur-sm border border-red-400/20"
+                        >
+                            <div className="flex items-center gap-1.5">
+                                <AlertCircle size={12} />
+                                To ensure quality, Kynto roadmaps are limited to 8,000 characters.
+                            </div>
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-red-500/90" />
+                        </motion.div>
                     )}
-                </motion.button>
+                </div>
             </form>
         </motion.div>
     );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
@@ -13,6 +13,7 @@ import { Zap } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
 const GUEST_USED_KEY = 'briefly_guest_used';
+const RETRY_DELAY_MESSAGE_MS = 2500; // Show "Kynto is highly active..." after 2.5s
 
 export default function DashboardClient() {
     const [user, setUser] = useState<User | null>(null);
@@ -21,12 +22,14 @@ export default function DashboardClient() {
     const [currentPlanContent, setCurrentPlanContent] = useState<string>('');
     const [currentGoal, setCurrentGoal] = useState<string>('');
     const [isLoading, setIsLoading] = useState(false);
+    const [loadingText, setLoadingText] = useState('Building your roadmap...');
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [pendingGoal, setPendingGoal] = useState<string>('');
     const [error, setError] = useState<string>('');
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const supabase = useMemo(() => createClient(), []);
+    const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 
     // Fetch user plans
@@ -69,6 +72,8 @@ export default function DashboardClient() {
         setIsLoading(true);
         setError('');
         setCurrentPlan(null);
+        setCurrentPlanContent('');
+        setLoadingText('Building your roadmap...');
 
         const guestUsed = localStorage.getItem(GUEST_USED_KEY) === 'true';
 
@@ -80,6 +85,12 @@ export default function DashboardClient() {
             return;
         }
 
+        // Set timeout to show "Retrying" message if server takes time (exponential backoff)
+        if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = setTimeout(() => {
+            setLoadingText('Kynto is highly active right now. Retrying in a moment...');
+        }, RETRY_DELAY_MESSAGE_MS);
+
         try {
             const res = await fetch('/api/generate', {
                 method: 'POST',
@@ -87,37 +98,80 @@ export default function DashboardClient() {
                 body: JSON.stringify({ goal, guestUsed: guestUsed && !user }),
             });
 
-            const data = await res.json();
+            // Clear retry message timer once we get a response (headers)
+            if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
 
-            if (res.status === 403 && data.requiresAuth) {
-                setPendingGoal(goal);
-                setShowAuthModal(true);
+            // Handle Auth/Quota errors specifically
+            if (res.status === 403) {
+                const data = await res.json();
+                if (data.requiresAuth) {
+                    setPendingGoal(goal);
+                    setShowAuthModal(true);
+                    setIsLoading(false);
+                    return;
+                }
+            }
+
+            if (res.status === 429) {
+                setError('Kynto is highly active right now. Please try again in 1 minute.');
                 setIsLoading(false);
                 return;
             }
 
-            if (!res.ok) {
+            if (!res.ok || !res.body) {
+                const data = await res.json().catch(() => ({}));
                 setError(data.error || 'Something went wrong. Please try again.');
                 setIsLoading(false);
                 return;
             }
 
-            // Mark guest credit as used
+            // Mark guest credit as used immediately upon success start
             if (!user) {
                 localStorage.setItem(GUEST_USED_KEY, 'true');
             }
 
-            setCurrentPlanContent(data.plan);
-            setCurrentGoal(goal);
+            // STREAMING LOGIC
+            setLoadingText('Streaming roadmap...');
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let accumulatedContent = '';
 
-            // Refresh plans list if authenticated
-            if (user) {
-                fetchPlans();
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    accumulatedContent += chunk;
+                    setCurrentPlanContent(accumulatedContent);
+                }
+            } catch (err) {
+                console.error('Stream error:', err);
+                setError('Stream interrupted. Please try again.');
+            } finally {
+                reader.releaseLock();
             }
+
+            // Generation Complete
+            setCurrentGoal(goal);
+            setIsLoading(false); // Stop loading animation but content stays
+
+            // SAVE TO DB IF AUTHENTICATED
+            if (user && accumulatedContent.length > 50) {
+                const title = goal.trim().slice(0, 80);
+                await supabase.from('plans').insert({
+                    user_id: user.id,
+                    title,
+                    content: accumulatedContent,
+                });
+                fetchPlans(); // Refresh sidebar
+            }
+
         } catch {
             setError('Network error. Please check your connection and try again.');
-        } finally {
             setIsLoading(false);
+        } finally {
+            if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
         }
     };
 
@@ -185,7 +239,7 @@ export default function DashboardClient() {
                         </motion.div>
 
                         {/* Generate form */}
-                        <GenerateForm onGenerate={handleGenerate} isLoading={isLoading} />
+                        <GenerateForm onGenerate={handleGenerate} isLoading={isLoading && !currentPlanContent} />
 
                         {/* Error */}
                         <AnimatePresence>
@@ -194,16 +248,16 @@ export default function DashboardClient() {
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0 }}
-                                    className="glass-card p-4 border-red-500/20 bg-red-500/5"
+                                    className="glass-card p-4 border-red-500/20 bg-red-500/5 mb-4"
                                 >
                                     <p className="text-red-400 text-sm">{error}</p>
                                 </motion.div>
                             )}
                         </AnimatePresence>
 
-                        {/* Loading skeleton */}
+                        {/* Loading indication (only before stream starts) */}
                         <AnimatePresence>
-                            {isLoading && (
+                            {isLoading && !currentPlanContent && (
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
@@ -217,8 +271,8 @@ export default function DashboardClient() {
                                         <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/10 to-emerald-500/10 animate-ping" />
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-white/70 font-medium text-sm">Crafting your action plan...</p>
-                                        <p className="text-white/30 text-xs mt-1">Gemini is thinking</p>
+                                        <p className="text-white/70 font-medium text-sm">{loadingText}</p>
+                                        <p className="text-white/30 text-xs mt-1">AI Agent Working</p>
                                     </div>
                                     <div className="w-full space-y-2 mt-2">
                                         {[80, 60, 70, 50].map((w, i) => (
@@ -233,9 +287,9 @@ export default function DashboardClient() {
                             )}
                         </AnimatePresence>
 
-                        {/* Plan output */}
+                        {/* Plan output (Streams in real-time) */}
                         <AnimatePresence>
-                            {currentPlanContent && !isLoading && (
+                            {(currentPlanContent || (isLoading && currentPlanContent)) && (
                                 <PlanOutput content={currentPlanContent} title={currentGoal} />
                             )}
                         </AnimatePresence>
