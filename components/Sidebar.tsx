@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, FileText, Trash2, Clock, X, Menu } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText, Trash2, Clock, X } from 'lucide-react';
 import { Plan } from '@/types';
 
 interface SidebarProps {
@@ -11,6 +11,8 @@ interface SidebarProps {
     onSelectPlan: (plan: Plan) => void;
     onDeletePlan: (id: string) => void;
     isAuthenticated: boolean;
+    mobileOpen: boolean;
+    onMobileClose: () => void;
 }
 
 export default function Sidebar({
@@ -19,18 +21,10 @@ export default function Sidebar({
     onSelectPlan,
     onDeletePlan,
     isAuthenticated,
+    mobileOpen,
+    onMobileClose,
 }: SidebarProps) {
     const [collapsed, setCollapsed] = useState(false);
-    const [mobileOpen, setMobileOpen] = useState(false);
-
-    // Close mobile drawer on resize
-    useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth >= 768) setMobileOpen(false);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
 
     const formatDate = (dateStr: string) => {
         return new Date(dateStr).toLocaleDateString('en-US', {
@@ -54,12 +48,12 @@ export default function Sidebar({
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         className={`group relative flex items-start gap-2 p-3 rounded-xl cursor-pointer transition-all duration-200 ${selectedPlanId === plan.id
-                                ? 'bg-blue-500/15 border border-blue-500/30'
-                                : 'hover:bg-white/5 border border-transparent'
+                            ? 'bg-blue-500/15 border border-blue-500/30'
+                            : 'hover:bg-white/5 border border-transparent'
                             }`}
                         onClick={() => {
                             onSelectPlan(plan);
-                            setMobileOpen(false);
+                            onMobileClose();
                         }}
                     >
                         <FileText
@@ -93,14 +87,6 @@ export default function Sidebar({
 
     return (
         <>
-            {/* Mobile hamburger button */}
-            <button
-                onClick={() => setMobileOpen(true)}
-                className="md:hidden fixed top-4 left-4 z-40 glass-card p-2 rounded-xl"
-            >
-                <Menu size={20} className="text-white/70" />
-            </button>
-
             {/* Mobile Drawer */}
             <AnimatePresence>
                 {mobileOpen && (
@@ -109,7 +95,7 @@ export default function Sidebar({
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            onClick={() => setMobileOpen(false)}
+                            onClick={onMobileClose}
                             className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
                         />
                         <motion.div
@@ -127,7 +113,7 @@ export default function Sidebar({
                             <div className="flex items-center justify-between p-4 border-b border-white/8">
                                 <span className="text-white/70 text-sm font-semibold">Plan History</span>
                                 <button
-                                    onClick={() => setMobileOpen(false)}
+                                    onClick={onMobileClose}
                                     className="text-white/40 hover:text-white/70 transition-colors"
                                 >
                                     <X size={18} />
@@ -165,7 +151,7 @@ export default function Sidebar({
                             exit={{ opacity: 0 }}
                             className="text-white/60 text-xs font-semibold uppercase tracking-wider"
                         >
-                            Plan History
+                            History
                         </motion.span>
                     )}
                     <button
@@ -185,8 +171,8 @@ export default function Sidebar({
                                 onClick={() => onSelectPlan(plan)}
                                 title={plan.title}
                                 className={`p-2 rounded-xl transition-all ${selectedPlanId === plan.id
-                                        ? 'bg-blue-500/20 text-blue-400'
-                                        : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+                                    ? 'bg-blue-500/20 text-blue-400'
+                                    : 'text-white/30 hover:text-white/60 hover:bg-white/5'
                                     }`}
                             >
                                 <FileText size={16} />

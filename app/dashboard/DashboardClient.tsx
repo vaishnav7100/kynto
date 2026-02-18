@@ -26,6 +26,7 @@ export default function DashboardClient() {
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [pendingGoal, setPendingGoal] = useState<string>('');
     const [error, setError] = useState<string>('');
+    const [mobileOpen, setMobileOpen] = useState(false);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const supabase = useMemo(() => createClient(), []);
@@ -180,6 +181,7 @@ export default function DashboardClient() {
         setCurrentPlanContent(plan.content);
         setCurrentGoal(plan.title);
         setError('');
+        setMobileOpen(false); // Close mobile sidebar on selection
     };
 
     const handleDeletePlan = async (id: string) => {
@@ -206,6 +208,7 @@ export default function DashboardClient() {
             <Navbar
                 userEmail={user?.email}
                 onSignInClick={() => setShowAuthModal(true)}
+                onMenuClick={() => setMobileOpen(true)}
             />
 
             {/* Main layout */}
@@ -217,6 +220,8 @@ export default function DashboardClient() {
                     onSelectPlan={handleSelectPlan}
                     onDeletePlan={handleDeletePlan}
                     isAuthenticated={!!user}
+                    mobileOpen={mobileOpen}
+                    onMobileClose={() => setMobileOpen(false)}
                 />
 
                 {/* Main content */}

@@ -3,16 +3,17 @@
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Zap, LogOut, User } from 'lucide-react';
+import { Zap, LogOut, User, Menu } from 'lucide-react';
 import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 interface NavbarProps {
     userEmail?: string | null;
     onSignInClick: () => void;
+    onMenuClick?: () => void;
 }
 
-export default function Navbar({ userEmail, onSignInClick }: NavbarProps) {
+export default function Navbar({ userEmail, onSignInClick, onMenuClick }: NavbarProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const supabase = useMemo(() => createClient(), []);
     const router = useRouter();
@@ -27,16 +28,28 @@ export default function Navbar({ userEmail, onSignInClick }: NavbarProps) {
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="flex items-center justify-between px-6 py-4 border-b border-white/6"
+            className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-white/6"
             style={{ background: 'rgba(5, 5, 5, 0.8)', backdropFilter: 'blur(20px)' }}
         >
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 group">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                    <Zap size={16} className="text-white" />
-                </div>
-                <span className="text-lg font-bold gradient-text">Kynto</span>
-            </Link>
+            <div className="flex items-center gap-3">
+                {/* Mobile Menu Button */}
+                {onMenuClick && (
+                    <button
+                        onClick={onMenuClick}
+                        className="md:hidden text-white/70 hover:text-white transition-colors"
+                    >
+                        <Menu size={24} />
+                    </button>
+                )}
+
+                {/* Logo */}
+                <Link href="/" className="flex items-center gap-2 group">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                        <Zap size={16} className="text-white" />
+                    </div>
+                    <span className="text-lg font-bold gradient-text hidden sm:block">Kynto</span>
+                </Link>
+            </div>
 
             {/* Right side */}
             <div className="flex items-center gap-3">
