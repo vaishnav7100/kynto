@@ -9,14 +9,34 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Kynto — Instant AI Roadmaps',
+  metadataBase: new URL('https://kynto-ai.vercel.app'),
+  title: {
+    default: 'Kynto — Instant AI Roadmaps',
+    template: '%s | Kynto',
+  },
   description:
     'Transform your goals into detailed, actionable roadmaps in seconds using the power of AI. Free to try, no signup required.',
-  keywords: ['AI', 'roadmap', 'action plan', 'productivity', 'goal setting', 'planning'],
+  keywords: ['AI', 'roadmap', 'action plan', 'productivity', 'goal setting', 'planning', 'groq', 'llama 3'],
+  authors: [{ name: 'Kynto Team' }],
+  creator: 'Kynto',
   openGraph: {
     title: 'Kynto — Instant AI Roadmaps',
     description: 'Transform your goals into detailed, actionable roadmaps in seconds.',
+    url: 'https://kynto-ai.vercel.app',
+    siteName: 'Kynto',
+    locale: 'en_US',
     type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Kynto — Instant AI Roadmaps',
+    description: 'Transform your goals into detailed, actionable roadmaps in seconds.',
+  },
+  alternates: {
+    canonical: '/',
+  },
+  verification: {
+    google: 'google-site-verification=YOUR_CODE_HERE', // User needs to update this
   },
 };
 

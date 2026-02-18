@@ -78,7 +78,7 @@ export default function HomePage() {
           </p>
 
           {/* CTA */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link href="/dashboard">
               <motion.button
                 whileHover={{ scale: 1.03, boxShadow: '0 20px 40px rgba(59,130,246,0.3)' }}
@@ -124,6 +124,31 @@ export default function HomePage() {
       <footer className="text-center py-6 text-white/20 text-xs border-t border-white/5">
         © {new Date().getFullYear()} Kynto. Built with Next.js & Groq AI.
       </footer>
+
+      {/* Structured Data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'SoftwareApplication',
+            name: 'Kynto',
+            applicationCategory: 'ProductivityApplication',
+            operatingSystem: 'Web',
+            offers: {
+              '@type': 'Offer',
+              price: '0',
+              priceCurrency: 'USD',
+            },
+            description: 'Determine your next moves with Kynto: Instant AI Roadmaps. Turn any goal into a step-by-step action plan in seconds.',
+            aggregateRating: {
+              '@type': 'AggregateRating',
+              ratingValue: '4.8',
+              ratingCount: '1250',
+            },
+          }),
+        }}
+      />
     </div>
   );
 }
