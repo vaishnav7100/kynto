@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     canonical: '/',
   },
   verification: {
-    google: 'google-site-verification=YOUR_CODE_HERE', // User needs to update this
+    google: 'google-site-verification=fXcPiXBPbANtEb_BMUGKo3wbQmPi7rK6E52JCV2MpTU', // User needs to update this
   },
 };
 
