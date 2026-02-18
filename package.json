@@ -15,7 +15,7 @@
     "framer-motion": "^12.34.1",
     "groq-sdk": "^0.37.0",
     "lucide-react": "^0.574.0",
-    "next": "15.2.1",
+    "next": "^16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
@@ -27,7 +27,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "15.2.1",
+    "eslint-config-next": "^16.1.6",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
